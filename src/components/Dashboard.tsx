@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import InviteUser from './InviteUser';
 import PendingInvitations from './PendingInvitations';
 import TeamMemberManagement from './TeamMemberManagement';
+import TeamInvitationsList from './TeamInvitationsList';
 
 interface Team {
   id: string;
@@ -197,10 +198,20 @@ export default function Dashboard() {
             currentUserId={session.user.id}
             onMemberUpdated={() => getTeamMembers(selectedTeam)}
           />
+          <TeamInvitationsList 
+            teamId={selectedTeam} 
+            currentUserRole={currentUserRole}
+          />
           {(currentUserRole === 'admin' || currentUserRole === 'editor') && (
             <div>
               <h2 className="text-xl font-semibold mt-4 mb-2">Invite User</h2>
-              <InviteUser teamId={selectedTeam} onInviteSuccess={() => getTeamMembers(selectedTeam)} />
+              <InviteUser 
+                teamId={selectedTeam} 
+                onInviteSuccess={() => {
+                  getTeamMembers(selectedTeam);
+                  // Add a method to refresh the TeamInvitationsList
+                }}
+              />
             </div>
           )}
         </>
