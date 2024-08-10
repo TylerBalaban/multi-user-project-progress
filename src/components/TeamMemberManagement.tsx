@@ -48,18 +48,28 @@ export default function TeamMemberManagement({
     }
   };
 
-  const handleRemoveMember = async (memberId: string) => {
+  const handleRemoveMember = async (memberId: string, memberEmail: string) => {
     if (currentUserRole !== 'admin') return;
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      // Remove the team member
+      const { error: removeMemberError } = await supabase
         .from('team_members')
         .delete()
         .eq('id', memberId)
         .eq('team_id', teamId);
 
-      if (error) throw error;
+      if (removeMemberError) throw removeMemberError;
+
+      // Delete any invitations (both pending and accepted) for this email and team
+      const { error: removeInvitationError } = await supabase
+        .from('invitations')
+        .delete()
+        .eq('email', memberEmail)
+        .eq('team_id', teamId);
+
+      if (removeInvitationError) throw removeInvitationError;
 
       onMemberUpdated();
     } catch (error) {
@@ -91,7 +101,7 @@ export default function TeamMemberManagement({
             )}
             {currentUserRole === 'admin' && member.user_id !== currentUserId && (
               <button
-                onClick={() => handleRemoveMember(member.id)}
+                onClick={() => handleRemoveMember(member.id, member.email)}
                 className="ml-2 bg-red-500 text-white px-2 py-1 rounded"
                 disabled={loading}
               >
