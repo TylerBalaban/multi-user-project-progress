@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
@@ -10,6 +10,96 @@ export default function Registration() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        await setupUserAndTeam(session.user);
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const setupUserAndTeam = async (user: any) => {
+    const teamName = user.email.split('@')[0];
+    try {
+      // Check if user already exists in public.users
+      const { data: existingUser, error: userCheckError } = await supabase
+        .from('users')
+        .select('id, default_team_id')
+        .eq('id', user.id)
+        .single();
+  
+      if (userCheckError && userCheckError.code !== 'PGRST116') {
+        throw userCheckError;
+      }
+  
+      if (!existingUser) {
+        // Check if a team already exists for this user
+        const { data: existingTeam, error: teamCheckError } = await supabase
+          .from('teams')
+          .select('id')
+          .eq('name', teamName)
+          .single();
+  
+        if (teamCheckError && teamCheckError.code !== 'PGRST116') {
+          throw teamCheckError;
+        }
+  
+        let teamId;
+  
+        if (!existingTeam) {
+          // Create default team for new user
+          const { data: team, error: teamError } = await supabase
+            .from('teams')
+            .insert({ name: teamName })
+            .select()
+            .single();
+  
+          if (teamError) throw teamError;
+          teamId = team.id;
+        } else {
+          teamId = existingTeam.id;
+        }
+  
+        // Create user record in public.users table
+        const { error: userError } = await supabase
+          .from('users')
+          .insert({
+            id: user.id,
+            email: user.email,
+            default_team_id: teamId
+          });
+  
+        if (userError) throw userError;
+  
+        // Add the user to the team as an admin
+        const { error: memberError } = await supabase
+          .from('team_members')
+          .insert({
+            team_id: teamId,
+            user_id: user.id,
+            email: user.email,
+            role: 'admin',
+            status: 'accepted'
+          });
+  
+        if (memberError) throw memberError;
+  
+        console.log('User and team setup completed successfully');
+      } else {
+        console.log('User already exists, skipping team creation');
+      }
+  
+      router.push('/dashboard');
+    } catch (error: any) {
+      console.error('Error setting up user and team:', error);
+      setError(error.message);
+    }
+  };
 
   const handleRegistration = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -23,60 +113,18 @@ export default function Registration() {
     }
 
     try {
-      const { data: { user }, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
       });
 
       if (error) throw error;
 
-      if (user) {
-        // Ensure user exists in the public.users table
-        const { error: upsertError } = await supabase
-          .from('users')
-          .upsert({ id: user.id, email: user.email }, { onConflict: 'id' });
-        
-        if (upsertError) throw upsertError;
-
-        // Create default team for new user
-        await createDefaultTeam(user.id);
-
-        router.push('/dashboard'); // Redirect to dashboard or confirmation page
-      }
+      // The user and team setup will be handled by the onAuthStateChange listener
     } catch (error: any) {
       setError(error.message);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const createDefaultTeam = async (userId: string) => {
-    try {
-      // Create a new team
-      const { data: team, error: teamError } = await supabase
-        .from('teams')
-        .insert({ name: 'My Team' })
-        .select()
-        .single();
-
-      if (teamError) throw teamError;
-
-      // Add the user to the team as an admin
-      const { error: memberError } = await supabase
-        .from('team_members')
-        .insert({
-          team_id: team.id,
-          user_id: userId,
-          role: 'admin',
-          status: 'accepted'
-        });
-
-      if (memberError) throw memberError;
-
-      console.log('Default team created successfully');
-    } catch (error: any) {
-      console.error('Error creating default team:', error);
-      throw new Error('Error creating default team: ' + error.message);
     }
   };
 

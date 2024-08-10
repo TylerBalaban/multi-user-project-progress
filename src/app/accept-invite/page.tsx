@@ -56,7 +56,7 @@ export default function AcceptInvite() {
     };
 
     handleInvite();
-  }, [supabase, router]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -82,14 +82,46 @@ export default function AcceptInvite() {
         if (userError) throw userError;
         if (!user) throw new Error('No user data after password update');
 
-        // Ensure user exists in the public.users table
-        const { error: upsertError } = await supabase
+        // Check if user already has a default team
+        const { data: existingUser, error: userCheckError } = await supabase
           .from('users')
-          .upsert({ id: user.id, email: user.email }, { onConflict: 'id' });
-        if (upsertError) throw upsertError;
+          .select('default_team_id')
+          .eq('id', user.id)
+          .single();
 
-        // Create default team for new user
-        await createDefaultTeam(user.id);
+        if (userCheckError && userCheckError.code !== 'PGRST116') {
+          throw userCheckError;
+        }
+
+        if (!existingUser || !existingUser.default_team_id) {
+          // Create default team for new user
+          const teamName = user.email!.split('@')[0];
+          const { data: team, error: teamError } = await supabase
+            .from('teams')
+            .insert({ name: teamName })
+            .select()
+            .single();
+
+          if (teamError) throw teamError;
+
+          // Update user with default team
+          const { error: updateError } = await supabase
+            .from('users')
+            .upsert({ id: user.id, email: user.email, default_team_id: team.id }, { onConflict: 'id' });
+          if (updateError) throw updateError;
+
+          // Add user to the team
+          const { error: memberError } = await supabase
+            .from('team_members')
+            .insert({
+              team_id: team.id,
+              user_id: user.id,
+              email: user.email,
+              role: 'admin',
+              status: 'accepted'
+            });
+          if (memberError) throw memberError;
+        }
 
         await acceptInvitation(user.id, user.email!, invitationId!);
       } catch (error: any) {
@@ -103,48 +135,12 @@ export default function AcceptInvite() {
         if (error) throw error;
         if (!user) throw new Error('No user data');
 
-        // Ensure user exists in the public.users table
-        const { error: upsertError } = await supabase
-          .from('users')
-          .upsert({ id: user.id, email: user.email }, { onConflict: 'id' });
-        if (upsertError) throw upsertError;
-
         await acceptInvitation(user.id, user.email!, invitationId!);
       } catch (error: any) {
         console.error('Error getting user or accepting invitation:', error);
         setError('Error accepting invitation: ' + error.message);
         setLoading(false);
       }
-    }
-  };
-
-  const createDefaultTeam = async (userId: string) => {
-    try {
-      // Create a new team
-      const { data: team, error: teamError } = await supabase
-        .from('teams')
-        .insert({ name: 'My Team' })
-        .select()
-        .single();
-
-      if (teamError) throw teamError;
-
-      // Add the user to the team as an admin
-      const { error: memberError } = await supabase
-        .from('team_members')
-        .insert({
-          team_id: team.id,
-          user_id: userId,
-          role: 'admin',
-          status: 'accepted'
-        });
-
-      if (memberError) throw memberError;
-
-      console.log('Default team created successfully');
-    } catch (error: any) {
-      console.error('Error creating default team:', error);
-      throw new Error('Error creating default team: ' + error.message);
     }
   };
 
@@ -163,6 +159,7 @@ export default function AcceptInvite() {
         .insert({
           team_id: invitation.team_id,
           user_id: userId,
+          email: userEmail,
           role: invitation.role,
           status: 'accepted'
         });
