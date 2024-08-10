@@ -3,8 +3,17 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
+interface Invitation {
+  id: string;
+  team_id: string;
+  role: string;
+  teams: {
+    name: string;
+  };
+}
+
 export default function InvitationsList() {
-  const [invitations, setInvitations] = useState([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,7 +32,7 @@ export default function InvitationsList() {
       if (error) {
         console.error('Error fetching invitations:', error);
       } else {
-        setInvitations(data);
+        setInvitations(data as unknown as Invitation[]);
       }
     }
     setLoading(false);
@@ -50,7 +59,7 @@ export default function InvitationsList() {
           team_id: teamId,
           user_id: user.id,
           role: role,
-          status: 'accepted'  // Changed from 'active' to 'accepted'
+          status: 'accepted'
         });
   
       if (addMemberError) throw addMemberError;
@@ -58,8 +67,13 @@ export default function InvitationsList() {
       console.log('Invitation accepted successfully');
       fetchInvitations(); // Refresh the list of invitations
     } catch (error) {
-      console.error('Error accepting invitation:', error);
-      alert(`Error accepting invitation: ${error.message}`);
+      if (error instanceof Error) {
+        console.error('Error accepting invitation:', error);
+        alert(`Error accepting invitation: ${error.message}`);
+      } else {
+        console.error('Unexpected error accepting invitation:', error);
+        alert('Unexpected error accepting invitation');
+      }
     } finally {
       setLoading(false);
     }

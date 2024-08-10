@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import TeamInvitationsList, { TeamInvitationsListRef } from './TeamInvitationsList';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import InviteUser from './InviteUser';
 import PendingInvitations from './PendingInvitations';
 import TeamMemberManagement from './TeamMemberManagement';
-import TeamInvitationsList from './TeamInvitationsList';
 
 interface Team {
   id: string;
@@ -50,6 +50,7 @@ export default function Dashboard() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [currentUserRole, setCurrentUserRole] = useState<string>('');
   const router = useRouter();
+  const teamInvitationsListRef = useRef<TeamInvitationsListRef>(null);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -150,7 +151,7 @@ export default function Dashboard() {
         const currentMember = members.find(member => member.user_id === session?.user.id);
         if (currentMember) {
           setCurrentUserRole(currentMember.role);
-          console.log('Current user role:', currentMember.role);
+          console.log('Current user role:', currentUserRole);
         }
       }
     } catch (error) {
@@ -165,10 +166,6 @@ export default function Dashboard() {
   if (!session) {
     return null;
   }
-
-  console.log('Rendering dashboard with teams:', teams);
-  console.log('Selected team:', selectedTeam);
-  console.log('Team members:', teamMembers);
 
   return (
     <div className="space-y-4">
@@ -191,6 +188,7 @@ export default function Dashboard() {
       <PendingInvitations userId={session.user.id} onInvitationAccepted={() => getTeams(session.user.id)} />
       {selectedTeam && (
         <>
+          
           <TeamMemberManagement
             teamId={selectedTeam}
             members={teamMembers}
@@ -199,6 +197,7 @@ export default function Dashboard() {
             onMemberUpdated={() => getTeamMembers(selectedTeam)}
           />
           <TeamInvitationsList 
+            ref={teamInvitationsListRef}
             teamId={selectedTeam} 
             currentUserRole={currentUserRole}
           />
@@ -209,7 +208,7 @@ export default function Dashboard() {
                 teamId={selectedTeam} 
                 onInviteSuccess={() => {
                   getTeamMembers(selectedTeam);
-                  // Add a method to refresh the TeamInvitationsList
+                  teamInvitationsListRef.current?.refreshInvitations();
                 }}
               />
             </div>
@@ -219,3 +218,10 @@ export default function Dashboard() {
     </div>
   );
 }
+
+
+
+
+
+
+

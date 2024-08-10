@@ -12,12 +12,23 @@ export default function InviteUser({ teamId, onInviteSuccess }: InviteUserProps)
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('viewer');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleInvite = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
   
     try {
+      // Get the current user's email
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No authenticated user');
+
+      // Check if the invited email is the same as the current user's email
+      if (user.email === email) {
+        throw new Error('You cannot invite yourself');
+      }
+
       const response = await fetch('/api/invite', {
         method: 'POST',
         headers: {
@@ -36,7 +47,7 @@ export default function InviteUser({ teamId, onInviteSuccess }: InviteUserProps)
       setRole('viewer');
       onInviteSuccess();
     } catch (error: any) {
-      alert('Error sending invitation: ' + error.message);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
@@ -67,6 +78,7 @@ export default function InviteUser({ teamId, onInviteSuccess }: InviteUserProps)
       >
         {loading ? 'Sending...' : 'Send Invitation'}
       </button>
+      {error && <p className="text-red-500">{error}</p>}
     </form>
   );
 }
