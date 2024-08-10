@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -20,6 +20,27 @@ interface TeamMember {
   status: string;
 }
 
+interface TeamMemberQueryResult {
+  team_id: string;
+  role: string;
+  status: string;
+  teams: {
+    id: string;
+    name: string;
+  };
+}
+
+interface TeamMemberDetailsQueryResult {
+  id: string;
+  user_id: string;
+  role: string;
+  status: string;
+  email: string | null;
+  users: {
+    email: string;
+  } | null;
+}
+
 export default function Dashboard() {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -32,6 +53,7 @@ export default function Dashboard() {
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('Session:', session);
       if (session) {
         setSession(session);
         await getTeams(session.user.id);
@@ -41,7 +63,7 @@ export default function Dashboard() {
       setLoading(false);
     };
     checkUser();
-  }, [supabase, router]);
+  }, [router]);
 
   useEffect(() => {
     if (selectedTeam) {
@@ -51,23 +73,41 @@ export default function Dashboard() {
 
   async function getTeams(userId: string) {
     try {
+      console.log('Fetching teams for user:', userId);
       const { data, error } = await supabase
         .from('team_members')
-        .select('team_id, teams(id, name)')
+        .select(`
+          team_id,
+          role,
+          status,
+          teams:team_id (
+            id,
+            name
+          )
+        `)
         .eq('user_id', userId)
         .eq('status', 'accepted');
-
+  
       if (error) throw error;
-
+  
+      console.log('Raw data from Supabase:', data);
+  
       if (data) {
-        const teamData = data.map((item: any) => ({
-          id: item.teams.id,
-          name: item.teams.name,
-        }));
+        const teamData: Team[] = (data as unknown as TeamMemberQueryResult[])
+          .filter(item => item.teams)
+          .map(item => ({
+            id: item.teams.id,
+            name: item.teams.name,
+          }));
+  
+        console.log('Processed team data:', teamData);
+  
         setTeams(teamData);
         if (teamData.length > 0) {
           setSelectedTeam(teamData[0].id);
         }
+      } else {
+        console.log('No data returned from Supabase');
       }
     } catch (error) {
       console.error('Error fetching teams:', error);
@@ -76,26 +116,40 @@ export default function Dashboard() {
 
   async function getTeamMembers(teamId: string) {
     try {
+      console.log('Fetching team members for team:', teamId);
       const { data, error } = await supabase
         .from('team_members')
-        .select('id, user_id, users(email), role, status')
+        .select(`
+          id,
+          user_id,
+          role,
+          status,
+          email,
+          users:user_id (
+            email
+          )
+        `)
         .eq('team_id', teamId);
 
       if (error) throw error;
 
+      console.log('Raw team member data:', data);
+
       if (data) {
-        const members = data.map(item => ({
+        const members: TeamMember[] = (data as unknown as TeamMemberDetailsQueryResult[]).map(item => ({
           id: item.id,
           user_id: item.user_id,
-          email: item.users.email,
+          email: item.email || (item.users ? item.users.email : ''),
           role: item.role,
           status: item.status
         }));
+        console.log('Processed team members:', members);
         setTeamMembers(members);
 
         const currentMember = members.find(member => member.user_id === session?.user.id);
         if (currentMember) {
           setCurrentUserRole(currentMember.role);
+          console.log('Current user role:', currentMember.role);
         }
       }
     } catch (error) {
@@ -110,6 +164,10 @@ export default function Dashboard() {
   if (!session) {
     return null;
   }
+
+  console.log('Rendering dashboard with teams:', teams);
+  console.log('Selected team:', selectedTeam);
+  console.log('Team members:', teamMembers);
 
   return (
     <div className="space-y-4">
@@ -136,6 +194,7 @@ export default function Dashboard() {
             teamId={selectedTeam}
             members={teamMembers}
             currentUserRole={currentUserRole}
+            currentUserId={session.user.id}
             onMemberUpdated={() => getTeamMembers(selectedTeam)}
           />
           {(currentUserRole === 'admin' || currentUserRole === 'editor') && (

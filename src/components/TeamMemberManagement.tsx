@@ -12,8 +12,8 @@ interface TeamMember {
 interface TeamMemberManagementProps {
   teamId: string;
   members: TeamMember[];
-  currentUserRole: string | null;
-  currentUserId: string | null;
+  currentUserRole: string;
+  currentUserId: string;
   onMemberUpdated: () => void;
 }
 

@@ -4,37 +4,72 @@ import { supabase } from '@/lib/supabase';
 interface Invitation {
   id: string;
   team_id: string;
-  team_name: string;
   role: string;
+  teams: {
+    name: string;
+  };
 }
 
-export default function PendingInvitations({ userEmail, onInvitationAccepted }: { userEmail: string, onInvitationAccepted: () => void }) {
+interface InvitationQueryResult {
+  id: string;
+  team_id: string;
+  role: string;
+  teams: {
+    name: string;
+  };
+}
+
+export default function PendingInvitations({ userId, onInvitationAccepted }: { userId: string, onInvitationAccepted: () => void }) {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchInvitations();
-  }, [userEmail]);
+  }, [userId]);
 
   async function fetchInvitations() {
     try {
       setLoading(true);
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('email')
+        .eq('id', userId)
+        .single();
+
+      if (userError) throw userError;
+
+      if (!userData || !userData.email) {
+        throw new Error('User email not found');
+      }
+
       const { data, error } = await supabase
         .from('invitations')
-        .select('id, team_id, role, teams(name)')
-        .eq('email', userEmail)
+        .select(`
+          id,
+          team_id,
+          role,
+          teams (
+            name
+          )
+        `)
+        .eq('email', userData.email)
         .eq('status', 'pending');
 
       if (error) throw error;
 
-      if (data) {
-        setInvitations(data.map(item => ({
-          id: item.id,
-          team_id: item.team_id,
-          team_name: item.teams.name,
-          role: item.role
-        })));
-      }
+      console.log('Raw invitation data:', data);
+
+      const formattedInvitations: Invitation[] = (data as unknown as InvitationQueryResult[]).map(item => ({
+        id: item.id,
+        team_id: item.team_id,
+        role: item.role,
+        teams: {
+          name: item.teams.name
+        }
+      }));
+
+      console.log('Formatted invitations:', formattedInvitations);
+      setInvitations(formattedInvitations);
     } catch (error) {
       console.error('Error fetching invitations:', error);
     } finally {
@@ -44,32 +79,40 @@ export default function PendingInvitations({ userEmail, onInvitationAccepted }: 
 
   async function acceptInvitation(invitationId: string) {
     try {
-      // First, update the invitation status
-      const { error: invitationError } = await supabase
+      // First, get the invitation details
+      const { data: invitationData, error: invitationError } = await supabase
+        .from('invitations')
+        .select('team_id, role')
+        .eq('id', invitationId)
+        .single();
+
+      if (invitationError) throw invitationError;
+
+      if (!invitationData) {
+        throw new Error('Invitation not found');
+      }
+
+      // Update the invitation status to 'accepted'
+      const { error: updateError } = await supabase
         .from('invitations')
         .update({ status: 'accepted' })
         .eq('id', invitationId);
 
-      if (invitationError) throw invitationError;
+      if (updateError) throw updateError;
 
-      // Then, add the user to the team_members table
-      const invitation = invitations.find(inv => inv.id === invitationId);
-      if (!invitation) throw new Error('Invitation not found');
-
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError) throw userError;
-
-      const { error: teamMemberError } = await supabase
+      // Create a new team member entry
+      const { error: insertError } = await supabase
         .from('team_members')
         .insert({
-          team_id: invitation.team_id,
-          user_id: userData.user.id,
-          role: invitation.role,
+          team_id: invitationData.team_id,
+          user_id: userId,
+          role: invitationData.role,
           status: 'accepted'
         });
 
-      if (teamMemberError) throw teamMemberError;
+      if (insertError) throw insertError;
 
+      console.log('Invitation accepted successfully');
       await fetchInvitations();
       onInvitationAccepted();
     } catch (error) {
@@ -87,7 +130,7 @@ export default function PendingInvitations({ userEmail, onInvitationAccepted }: 
       <ul className="space-y-2">
         {invitations.map(invitation => (
           <li key={invitation.id} className="flex items-center justify-between bg-gray-100 p-2 rounded">
-            <span>{invitation.team_name} - {invitation.role}</span>
+            <span>{invitation.teams.name} - {invitation.role}</span>
             <button
               onClick={() => acceptInvitation(invitation.id)}
               className="bg-green-500 text-white px-2 py-1 rounded"
