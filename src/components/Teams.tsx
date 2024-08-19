@@ -61,8 +61,8 @@ export default function Teams() {
         const teamData: Team[] = data
           .filter(item => item.teams)
           .map(item => ({
-            id: item.teams.id,
-            name: item.teams.name,
+            id: item.teams[0].id,
+            name: item.teams[0].name,
           }));
   
         setTeams(teamData);
@@ -100,7 +100,7 @@ export default function Teams() {
         const members: TeamMember[] = data.map(item => ({
           id: item.id,
           user_id: item.user_id,
-          email: item.email || (item.users ? item.users.email : ''),
+          email: item.email || (item.users && item.users.length > 0 ? item.users[0].email : ''),
           role: item.role,
           status: item.status
         }));
