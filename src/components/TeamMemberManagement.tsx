@@ -26,8 +26,9 @@ export default function TeamMemberManagement({
 }: TeamMemberManagementProps) {
   const [loading, setLoading] = useState(false);
 
-  const handleRoleChange = async (memberId: string, newRole: string) => {
+  const handleRoleChange = async (memberId: string, newRole: string, currentMemberRole: string) => {
     if (!currentUserRole || (currentUserRole !== 'admin' && currentUserRole !== 'editor')) return;
+    if (currentUserRole === 'editor' && currentMemberRole === 'admin') return;
 
     setLoading(true);
     try {
@@ -80,6 +81,12 @@ export default function TeamMemberManagement({
     }
   };
 
+  const canChangeRole = (memberRole: string) => {
+    if (currentUserRole === 'admin') return true;
+    if (currentUserRole === 'editor' && memberRole !== 'admin') return true;
+    return false;
+  };
+
   return (
     <div>
       <h2 className="text-xl font-semibold mb-2">Team Members</h2>
@@ -87,10 +94,10 @@ export default function TeamMemberManagement({
         {members.map((member) => (
           <li key={member.id} className="mb-2">
             {member.email} - Role: {member.role}
-            {(currentUserRole === 'admin' || currentUserRole === 'editor') && member.user_id !== currentUserId && (
+            {canChangeRole(member.role) && member.user_id !== currentUserId && (
               <select
                 value={member.role}
-                onChange={(e) => handleRoleChange(member.id, e.target.value)}
+                onChange={(e) => handleRoleChange(member.id, e.target.value, member.role)}
                 className="ml-2 border p-1 rounded"
                 disabled={loading}
               >
