@@ -48,7 +48,7 @@ export default function Auth() {
         alert('Account created successfully! Please sign in.');
         setIsSignUp(false);
       } else {
-        router.push('/dashboard');
+        router.push('/');
       }
     } catch (error: any) {
       console.error('Auth error:', error);

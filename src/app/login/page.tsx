@@ -15,7 +15,7 @@ export default function LoginPage() {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        router.push('/dashboard');
+        router.push('/teams');
       } else {
         setLoading(false);
       }
@@ -37,7 +37,7 @@ export default function LoginPage() {
 
       if (error) throw error;
 
-      router.push('/dashboard');
+      router.push('/');
     } catch (error: any) {
       setError(error.message);
       setLoading(false);

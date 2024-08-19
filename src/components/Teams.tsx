@@ -21,7 +21,7 @@ interface TeamMember {
   status: string;
 }
 
-export default function Dashboard() {
+export default function Teams() {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -36,6 +36,7 @@ export default function Dashboard() {
     setSelectedTeam(null);
     setTeamMembers([]);
     setCurrentUserRole('');
+    setSession(null);
   }, []);
 
   const fetchTeams = useCallback(async (userId: string) => {
@@ -185,46 +186,52 @@ export default function Dashboard() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Welcome, {session.user.email}</h1>
-      <div>
-        <label htmlFor="team-select" className="block mb-2">Select Team:</label>
-        <select
-          id="team-select"
-          value={selectedTeam || ''}
-          onChange={(e) => handleTeamChange(e.target.value)}
-          className="border p-2 rounded"
-        >
-          {teams.map((team) => (
-            <option key={team.id} value={team.id}>
-              {team.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      <PendingInvitations userId={session.user.id} onInvitationAccepted={handleInvitationAccepted} />
-      {selectedTeam && (
+      {teams.length > 0 ? (
         <>
-          <TeamMemberManagement
-            teamId={selectedTeam}
-            members={teamMembers}
-            currentUserRole={currentUserRole}
-            currentUserId={session.user.id}
-            onMemberUpdated={handleMemberUpdated}
-          />
-          <TeamInvitationsList 
-            ref={teamInvitationsListRef}
-            teamId={selectedTeam} 
-            currentUserRole={currentUserRole}
-          />
-          {(currentUserRole === 'admin' || currentUserRole === 'editor') && (
-            <div>
-              <h2 className="text-xl font-semibold mt-4 mb-2">Invite User</h2>
-              <InviteUser 
-                teamId={selectedTeam} 
-                onInviteSuccess={handleInviteSuccess}
+          <div>
+            <label htmlFor="team-select" className="block mb-2">Select Team:</label>
+            <select
+              id="team-select"
+              value={selectedTeam || ''}
+              onChange={(e) => handleTeamChange(e.target.value)}
+              className="border p-2 rounded"
+            >
+              {teams.map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <PendingInvitations userId={session.user.id} onInvitationAccepted={handleInvitationAccepted} />
+          {selectedTeam && (
+            <>
+              <TeamMemberManagement
+                teamId={selectedTeam}
+                members={teamMembers}
+                currentUserRole={currentUserRole}
+                currentUserId={session.user.id}
+                onMemberUpdated={handleMemberUpdated}
               />
-            </div>
+              <TeamInvitationsList 
+                ref={teamInvitationsListRef}
+                teamId={selectedTeam} 
+                currentUserRole={currentUserRole}
+              />
+              {(currentUserRole === 'admin' || currentUserRole === 'editor') && (
+                <div>
+                  <h2 className="text-xl font-semibold mt-4 mb-2">Invite User</h2>
+                  <InviteUser 
+                    teamId={selectedTeam} 
+                    onInviteSuccess={handleInviteSuccess}
+                  />
+                </div>
+              )}
+            </>
           )}
         </>
+      ) : (
+        <p>You are not a member of any teams.</p>
       )}
     </div>
   );

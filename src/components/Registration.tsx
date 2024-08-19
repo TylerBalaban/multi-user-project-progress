@@ -13,7 +13,7 @@ export default function Registration() {
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        router.push('/dashboard');
+        router.push('/');
       }
     });
   
@@ -93,7 +93,7 @@ export default function Registration() {
         console.log('User already exists, skipping team creation');
       }
   
-      router.push('/dashboard');
+      router.push('/');
     } catch (error: any) {
       console.error('Error setting up user and team:', error);
       setError(error.message);
@@ -121,7 +121,7 @@ export default function Registration() {
   
       if (data.user) {
         await setupUserAndTeam(data.user);
-        router.push('/dashboard');
+        router.push('/');
       }
     } catch (error: any) {
       setError(error.message);
