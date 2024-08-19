@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import TeamInvitationsList, { TeamInvitationsListRef } from './TeamInvitationsList';
-import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import TeamInvitationsList, { TeamInvitationsListRef } from './TeamInvitationsList';
 import InviteUser from './InviteUser';
 import PendingInvitations from './PendingInvitations';
 import TeamMemberManagement from './TeamMemberManagement';
@@ -19,27 +19,6 @@ interface TeamMember {
   email: string;
   role: string;
   status: string;
-}
-
-interface TeamMemberQueryResult {
-  team_id: string;
-  role: string;
-  status: string;
-  teams: {
-    id: string;
-    name: string;
-  };
-}
-
-interface TeamMemberDetailsQueryResult {
-  id: string;
-  user_id: string;
-  role: string;
-  status: string;
-  email: string | null;
-  users: {
-    email: string;
-  } | null;
 }
 
 export default function Dashboard() {
@@ -59,41 +38,8 @@ export default function Dashboard() {
     setCurrentUserRole('');
   }, []);
 
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('Session:', session);
-      if (session) {
-        setSession(session);
-        await getTeams(session.user.id);
-      } else {
-        resetState();
-        router.push('/login');
-      }
-      setLoading(false);
-    };
-
-    checkUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event);
-      if (event === 'SIGNED_OUT') {
-        resetState();
-        router.push('/login');
-      } else if (event === 'SIGNED_IN' && session) {
-        setSession(session);
-        await getTeams(session.user.id);
-      }
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [router, resetState]);
-
-  async function getTeams(userId: string) {
+  const fetchTeams = useCallback(async (userId: string) => {
     try {
-      console.log('Fetching teams for user:', userId);
       const { data, error } = await supabase
         .from('team_members')
         .select(`
@@ -110,38 +56,29 @@ export default function Dashboard() {
   
       if (error) throw error;
   
-      console.log('Raw data from Supabase:', data);
-  
       if (data && data.length > 0) {
-        const teamData: Team[] = (data as unknown as TeamMemberQueryResult[])
+        const teamData: Team[] = data
           .filter(item => item.teams)
           .map(item => ({
             id: item.teams.id,
             name: item.teams.name,
           }));
   
-        console.log('Processed team data:', teamData);
-  
         setTeams(teamData);
-        if (teamData.length > 0) {
+        if (teamData.length > 0 && !selectedTeam) {
           setSelectedTeam(teamData[0].id);
-          await getTeamMembers(teamData[0].id);
         }
       } else {
-        console.log('No data returned from Supabase');
-        // Handle the case when the user has no teams
         setTeams([]);
         setSelectedTeam(null);
-        setTeamMembers([]);
       }
     } catch (error) {
       console.error('Error fetching teams:', error);
     }
-  }
+  }, []);
 
-  async function getTeamMembers(teamId: string) {
+  const fetchTeamMembers = useCallback(async (teamId: string) => {
     try {
-      console.log('Fetching team members for team:', teamId);
       const { data, error } = await supabase
         .from('team_members')
         .select(`
@@ -158,29 +95,84 @@ export default function Dashboard() {
 
       if (error) throw error;
 
-      console.log('Raw team member data:', data);
-
       if (data) {
-        const members: TeamMember[] = (data as unknown as TeamMemberDetailsQueryResult[]).map(item => ({
+        const members: TeamMember[] = data.map(item => ({
           id: item.id,
           user_id: item.user_id,
           email: item.email || (item.users ? item.users.email : ''),
           role: item.role,
           status: item.status
         }));
-        console.log('Processed team members:', members);
         setTeamMembers(members);
 
         const currentMember = members.find(member => member.user_id === session?.user.id);
         if (currentMember) {
           setCurrentUserRole(currentMember.role);
-          console.log('Current user role:', currentUserRole);
         }
       }
     } catch (error) {
       console.error('Error fetching team members:', error);
     }
-  }
+  }, [session]);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setSession(session);
+        fetchTeams(session.user.id);
+      } else {
+        resetState();
+        router.push('/login');
+      }
+      setLoading(false);
+    };
+  
+    checkUser();
+  
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT') {
+        resetState();
+        router.push('/login');
+      } else if (event === 'SIGNED_IN' && session) {
+        setSession(session);
+        fetchTeams(session.user.id);
+      }
+    });
+  
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [router, resetState, fetchTeams]);
+
+  useEffect(() => {
+    if (selectedTeam && session) {
+      fetchTeamMembers(selectedTeam);
+    }
+  }, [selectedTeam, session, fetchTeamMembers]);
+
+  const handleTeamChange = (teamId: string) => {
+    setSelectedTeam(teamId);
+  };
+
+  const handleInvitationAccepted = useCallback(() => {
+    if (session?.user?.id) {
+      fetchTeams(session.user.id);
+    }
+  }, [session, fetchTeams]);
+
+  const handleMemberUpdated = useCallback(() => {
+    if (selectedTeam) {
+      fetchTeamMembers(selectedTeam);
+    }
+  }, [selectedTeam, fetchTeamMembers]);
+
+  const handleInviteSuccess = useCallback(() => {
+    if (selectedTeam) {
+      fetchTeamMembers(selectedTeam);
+      teamInvitationsListRef.current?.refreshInvitations();
+    }
+  }, [selectedTeam, fetchTeamMembers]);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -198,7 +190,7 @@ export default function Dashboard() {
         <select
           id="team-select"
           value={selectedTeam || ''}
-          onChange={(e) => setSelectedTeam(e.target.value)}
+          onChange={(e) => handleTeamChange(e.target.value)}
           className="border p-2 rounded"
         >
           {teams.map((team) => (
@@ -208,16 +200,15 @@ export default function Dashboard() {
           ))}
         </select>
       </div>
-      <PendingInvitations userId={session.user.id} onInvitationAccepted={() => getTeams(session.user.id)} />
+      <PendingInvitations userId={session.user.id} onInvitationAccepted={handleInvitationAccepted} />
       {selectedTeam && (
         <>
-          
           <TeamMemberManagement
             teamId={selectedTeam}
             members={teamMembers}
             currentUserRole={currentUserRole}
             currentUserId={session.user.id}
-            onMemberUpdated={() => getTeamMembers(selectedTeam)}
+            onMemberUpdated={handleMemberUpdated}
           />
           <TeamInvitationsList 
             ref={teamInvitationsListRef}
@@ -229,10 +220,7 @@ export default function Dashboard() {
               <h2 className="text-xl font-semibold mt-4 mb-2">Invite User</h2>
               <InviteUser 
                 teamId={selectedTeam} 
-                onInviteSuccess={() => {
-                  getTeamMembers(selectedTeam);
-                  teamInvitationsListRef.current?.refreshInvitations();
-                }}
+                onInviteSuccess={handleInviteSuccess}
               />
             </div>
           )}
@@ -241,10 +229,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-
-
-
-
-
-
