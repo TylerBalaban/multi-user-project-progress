@@ -29,6 +29,21 @@ export default function InviteUser({ teamId, onInviteSuccess }: InviteUserProps)
         throw new Error('You cannot invite yourself');
       }
 
+      // Check if the user is already a member of the team
+      const { data: existingMember, error: memberError } = await supabase
+        .from('team_members')
+        .select('id')
+        .eq('team_id', teamId)
+        .eq('email', email)
+        .single();
+
+      if (memberError && memberError.code !== 'PGRST116') throw memberError;
+
+      if (existingMember) {
+        throw new Error('This member is already part of your team');
+      }
+
+      // If the user is not a team member, proceed with the invitation
       const response = await fetch('/api/invite', {
         method: 'POST',
         headers: {

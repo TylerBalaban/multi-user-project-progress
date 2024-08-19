@@ -92,13 +92,19 @@ export default function PendingInvitations({ userId, onInvitationAccepted }: { u
         throw new Error('Invitation not found');
       }
 
-      // Update the invitation status to 'accepted'
-      const { error: updateError } = await supabase
-        .from('invitations')
-        .update({ status: 'accepted' })
-        .eq('id', invitationId);
+      // Check if the user is already a member of the team
+      const { data: existingMember, error: memberError } = await supabase
+        .from('team_members')
+        .select('id')
+        .eq('team_id', invitationData.team_id)
+        .eq('user_id', userId)
+        .single();
 
-      if (updateError) throw updateError;
+      if (memberError && memberError.code !== 'PGRST116') throw memberError;
+
+      if (existingMember) {
+        throw new Error('You are already a member of this team');
+      }
 
       // Create a new team member entry
       const { error: insertError } = await supabase
@@ -106,38 +112,47 @@ export default function PendingInvitations({ userId, onInvitationAccepted }: { u
         .insert({
           team_id: invitationData.team_id,
           user_id: userId,
-          email: invitationData.email, // Include the email from the invitation
+          email: invitationData.email,
           role: invitationData.role,
           status: 'accepted'
         });
 
       if (insertError) throw insertError;
 
+      // Delete the invitation
+      const { error: deleteError } = await supabase
+        .from('invitations')
+        .delete()
+        .eq('id', invitationId);
+
+      if (deleteError) throw deleteError;
+
       console.log('Invitation accepted successfully');
       await fetchInvitations();
       onInvitationAccepted();
     } catch (error) {
       console.error('Error accepting invitation:', error);
+      alert(error instanceof Error ? error.message : 'An error occurred while accepting the invitation');
     }
   }
 
   async function rejectInvitation(invitationId: string) {
     try {
-      // Update the invitation status to 'rejected'
-      const { error: updateError } = await supabase
+      // Delete the invitation
+      const { error: deleteError } = await supabase
         .from('invitations')
-        .update({ status: 'rejected' })
+        .delete()
         .eq('id', invitationId);
 
-      if (updateError) throw updateError;
+      if (deleteError) throw deleteError;
 
       console.log('Invitation rejected successfully');
       await fetchInvitations();
     } catch (error) {
       console.error('Error rejecting invitation:', error);
+      alert('An error occurred while rejecting the invitation');
     }
   }
-
   if (loading) return <div>Loading invitations...</div>;
 
   if (invitations.length === 0) return null;
