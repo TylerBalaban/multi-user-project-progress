@@ -59,8 +59,24 @@ export async function POST(request: Request) {
     const acceptInviteUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/accept-invite?invitationId=${invitation.id}`;
     console.log('Accept Invite URL:', acceptInviteUrl);
 
-    // Send invitation email (implement this part based on your email service)
-    console.log('Sending invitation email to:', invitedEmail);
+    const sgMail = require('@sendgrid/mail');
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+    const msg = {
+      to: invitedEmail,
+      from: 'tyler@inceptiv.co', // Use the email address or domain you verified with SendGrid
+      subject: 'You are invited to join a team',
+      text: `You have been invited to join the team with the role of ${role}. Please accept the invitation using the following link: ${acceptInviteUrl}`,
+      html: `<p>You have been invited to join the team with the role of ${role}. Please accept the invitation using the following link: <a href="${acceptInviteUrl}">Accept Invitation</a></p>`,
+    };
+
+    try {
+      await sgMail.send(msg);
+      console.log('Invitation email sent to:', invitedEmail);
+    } catch (error) {
+      console.error('Error sending invitation email:', error);
+      return NextResponse.json({ error: 'Error sending invitation email' }, { status: 500 });
+    }
 
     console.log('Invitation process completed successfully');
     return NextResponse.json({ message: 'Invitation sent successfully' });
