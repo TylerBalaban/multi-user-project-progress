@@ -49,7 +49,7 @@ export default function AcceptInvite() {
           await acceptInvitation(session.user.id, session.user.email!, invitationId!);
         } catch (error: any) {
           console.error('Error in existing user flow:', error);
-          setError('Please log in to accept the invitation. ' + error.message);
+          setError('Please log in to accept the invitation. If you do not have an account, please create one. ' + error.message);
           setLoading(false);
         }
       }

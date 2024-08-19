@@ -82,7 +82,7 @@ export default function PendingInvitations({ userId, onInvitationAccepted }: { u
       // First, get the invitation details
       const { data: invitationData, error: invitationError } = await supabase
         .from('invitations')
-        .select('team_id, role')
+        .select('team_id, role, email')
         .eq('id', invitationId)
         .single();
 
@@ -106,6 +106,7 @@ export default function PendingInvitations({ userId, onInvitationAccepted }: { u
         .insert({
           team_id: invitationData.team_id,
           user_id: userId,
+          email: invitationData.email, // Include the email from the invitation
           role: invitationData.role,
           status: 'accepted'
         });
