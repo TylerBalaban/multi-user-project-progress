@@ -54,6 +54,23 @@ const TeamInvitationsList = forwardRef<TeamInvitationsListRef, TeamInvitationsLi
       refreshInvitations: fetchTeamInvitations
     }));
 
+    const handleRemoveInvitation = async (invitationId: string) => {
+      try {
+        const { error } = await supabase
+          .from('invitations')
+          .delete()
+          .eq('id', invitationId);
+
+        if (error) throw error;
+
+        // Refresh the invitations list after successful removal
+        fetchTeamInvitations();
+      } catch (error) {
+        console.error('Error removing invitation:', error);
+        // You might want to add some user-facing error handling here
+      }
+    };
+
     if (loading || !(currentUserRole === 'admin' || currentUserRole === 'editor')) {
       return null;
     }
@@ -67,8 +84,14 @@ const TeamInvitationsList = forwardRef<TeamInvitationsListRef, TeamInvitationsLi
         <h3 className="text-lg font-semibold mb-2">Pending Team Invitations</h3>
         <ul>
           {invitations.map((invitation) => (
-            <li key={invitation.id} className="mb-2">
-              {invitation.email} - {invitation.role}
+            <li key={invitation.id} className="mb-2 flex items-center">
+              <span>{invitation.email} - {invitation.role}</span>
+              <button
+                onClick={() => handleRemoveInvitation(invitation.id)}
+                className="ml-2 bg-red-500 text-white px-2 py-1 rounded text-sm"
+              >
+                Remove
+              </button>
             </li>
           ))}
         </ul>

@@ -121,6 +121,23 @@ export default function PendingInvitations({ userId, onInvitationAccepted }: { u
     }
   }
 
+  async function rejectInvitation(invitationId: string) {
+    try {
+      // Update the invitation status to 'rejected'
+      const { error: updateError } = await supabase
+        .from('invitations')
+        .update({ status: 'rejected' })
+        .eq('id', invitationId);
+
+      if (updateError) throw updateError;
+
+      console.log('Invitation rejected successfully');
+      await fetchInvitations();
+    } catch (error) {
+      console.error('Error rejecting invitation:', error);
+    }
+  }
+
   if (loading) return <div>Loading invitations...</div>;
 
   if (invitations.length === 0) return null;
@@ -132,12 +149,20 @@ export default function PendingInvitations({ userId, onInvitationAccepted }: { u
         {invitations.map(invitation => (
           <li key={invitation.id} className="flex items-center justify-between bg-gray-100 p-2 rounded">
             <span>{invitation.teams.name} - {invitation.role}</span>
-            <button
-              onClick={() => acceptInvitation(invitation.id)}
-              className="bg-green-500 text-white px-2 py-1 rounded"
-            >
-              Accept
-            </button>
+            <div>
+              <button
+                onClick={() => acceptInvitation(invitation.id)}
+                className="bg-green-500 text-white px-2 py-1 rounded mr-2"
+              >
+                Accept
+              </button>
+              <button
+                onClick={() => rejectInvitation(invitation.id)}
+                className="bg-red-500 text-white px-2 py-1 rounded"
+              >
+                Reject
+              </button>
+            </div>
           </li>
         ))}
       </ul>
