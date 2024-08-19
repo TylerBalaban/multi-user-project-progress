@@ -65,7 +65,7 @@ export default function Dashboard() {
       setLoading(false);
     };
     checkUser();
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     if (selectedTeam) {
@@ -94,7 +94,7 @@ export default function Dashboard() {
   
       console.log('Raw data from Supabase:', data);
   
-      if (data) {
+      if (data && data.length > 0) {
         const teamData: Team[] = (data as unknown as TeamMemberQueryResult[])
           .filter(item => item.teams)
           .map(item => ({
@@ -107,9 +107,14 @@ export default function Dashboard() {
         setTeams(teamData);
         if (teamData.length > 0) {
           setSelectedTeam(teamData[0].id);
+          await getTeamMembers(teamData[0].id);
         }
       } else {
         console.log('No data returned from Supabase');
+        // Handle the case when the user has no teams
+        setTeams([]);
+        setSelectedTeam(null);
+        setTeamMembers([]);
       }
     } catch (error) {
       console.error('Error fetching teams:', error);

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-
 export default function Registration() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,15 +13,15 @@ export default function Registration() {
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        await setupUserAndTeam(session.user);
+        router.push('/dashboard');
       }
     });
-
+  
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
-
+  }, [router]);
+  
   const setupUserAndTeam = async (user: any) => {
     const teamName = user.email.split('@')[0];
     try {
@@ -105,22 +104,25 @@ export default function Registration() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
+  
     if (password.length < 6) {
       setError('Password must be at least 6 characters long.');
       setLoading(false);
       return;
     }
-
+  
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
-
+  
       if (error) throw error;
-
-      // The user and team setup will be handled by the onAuthStateChange listener
+  
+      if (data.user) {
+        await setupUserAndTeam(data.user);
+        router.push('/dashboard');
+      }
     } catch (error: any) {
       setError(error.message);
     } finally {
