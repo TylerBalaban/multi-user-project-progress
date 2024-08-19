@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import TeamInvitationsList, { TeamInvitationsListRef } from './TeamInvitationsList';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -52,6 +52,13 @@ export default function Dashboard() {
   const router = useRouter();
   const teamInvitationsListRef = useRef<TeamInvitationsListRef>(null);
 
+  const resetState = useCallback(() => {
+    setTeams([]);
+    setSelectedTeam(null);
+    setTeamMembers([]);
+    setCurrentUserRole('');
+  }, []);
+
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -60,18 +67,29 @@ export default function Dashboard() {
         setSession(session);
         await getTeams(session.user.id);
       } else {
+        resetState();
         router.push('/login');
       }
       setLoading(false);
     };
-    checkUser();
-  }, []);
 
-  useEffect(() => {
-    if (selectedTeam) {
-      getTeamMembers(selectedTeam);
-    }
-  }, [selectedTeam]);
+    checkUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+      if (event === 'SIGNED_OUT') {
+        resetState();
+        router.push('/login');
+      } else if (event === 'SIGNED_IN' && session) {
+        setSession(session);
+        await getTeams(session.user.id);
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [router, resetState]);
 
   async function getTeams(userId: string) {
     try {
