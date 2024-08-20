@@ -13,6 +13,16 @@ interface Team {
   name: string;
 }
 
+interface TeamMemberData {
+  team_id: string;
+  role: string;
+  status: string;
+  teams: {
+    id: string;
+    name: string;
+  };
+}
+
 interface TeamMember {
   id: string;
   user_id: string;
@@ -57,13 +67,17 @@ export default function Teams() {
   
       if (error) throw error;
   
+      console.log('Fetched team data:', data); // Log the raw data
+  
       if (data && data.length > 0) {
-        const teamData: Team[] = data
-          .filter(item => item.teams)
+        const teamData: Team[] = (data as unknown as TeamMemberData[])
+          .filter(item => item.teams && item.teams.id && item.teams.name)
           .map(item => ({
-            id: item.teams[0].id,
-            name: item.teams[0].name,
+            id: item.team_id,
+            name: item.teams.name,
           }));
+  
+        console.log('Processed team data:', teamData); // Log the processed data
   
         setTeams(teamData);
         if (teamData.length > 0 && !selectedTeam) {
