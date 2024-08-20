@@ -1,3 +1,4 @@
+import './globals.css'
 import { SessionProvider } from '@/components/SessionProvider';
 import Navigation from '@/components/Navigation';
 
