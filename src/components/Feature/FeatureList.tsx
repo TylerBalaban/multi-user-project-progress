@@ -1,187 +1,213 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { FeatureProps, Feature } from '@/types'
-import { Menu, Transition } from '@headlessui/react'
-import { Fragment } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import TaskList from '@/components/Task/TaskList'
-import AddTaskForm from '@/components/Task/AddTaskForm'
+import React, { useState, useEffect, Fragment } from "react";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { Menu, Transition } from "@headlessui/react";
+import { Feature, Task } from "@/types";
+import TaskList from "@/components/Task/TaskList";
+import AddTaskForm from "@/components/Task/AddTaskForm";
 
-
-function FeatureItem({ feature, onDuplicate, onDelete }: FeatureProps & { onDuplicate: (newFeature: Feature) => void, onDelete: (featureId: string) => void }) {
-  const supabase = createClientComponentClient()
+function FeatureItem({
+  feature,
+  onDuplicate,
+  onDelete,
+}: {
+  feature: Feature;
+  onDuplicate: (newFeature: Feature) => void;
+  onDelete: (featureId: string) => void;
+}) {
+  const supabase = createClientComponentClient();
 
   const handleDuplicateFeature = async () => {
     try {
       // Duplicate the feature
       const { data: newFeature, error: featureError } = await supabase
-        .from('features')
-        .insert({ name: `${feature.name} (Copy)`, project_id: feature.project_id, order: feature.order })
+        .from("features")
+        .insert({
+          name: `${feature.name} (Copy)`,
+          project_id: feature.project_id,
+          order: feature.order,
+        })
         .select()
-        .single()
+        .single();
 
-      if (featureError) {
-        console.error('Error duplicating feature:', featureError)
-        throw new Error(`Failed to duplicate feature: ${featureError.message}`)
-      }
+      if (featureError) throw featureError;
 
       // Duplicate the tasks
-      const tasks = feature.tasks.map((task: { name: any; progress: any }) => ({
+      const tasks = feature.tasks.map((task) => ({
         name: task.name,
         feature_id: newFeature.id,
         progress: task.progress,
-        created_at: new Date().toISOString()
-      }))
+        created_at: new Date().toISOString(),
+      }));
 
-      const { error: tasksError } = await supabase
-        .from('tasks')
-        .insert(tasks)
+      const { error: tasksError } = await supabase.from("tasks").insert(tasks);
 
-      if (tasksError) {
-        console.error('Error duplicating tasks:', tasksError)
-        throw new Error(`Failed to duplicate tasks: ${tasksError.message}`)
-      }
+      if (tasksError) throw tasksError;
 
       // Fetch the new feature with its tasks
       const { data: fetchedFeature, error: fetchError } = await supabase
-        .from('features')
-        .select('*, tasks(*)')
-        .eq('id', newFeature.id)
-        .single()
+        .from("features")
+        .select("*, tasks(*)")
+        .eq("id", newFeature.id)
+        .single();
 
-      if (fetchError) {
-        console.error('Error fetching new feature:', fetchError)
-        throw new Error(`Failed to fetch new feature: ${fetchError.message}`)
-      }
+      if (fetchError) throw fetchError;
 
-      console.log('Feature and tasks duplicated successfully:', fetchedFeature)
-      onDuplicate(fetchedFeature)
+      onDuplicate(fetchedFeature);
     } catch (error) {
-      console.error('Error in handleDuplicateFeature:', error)
+      console.error("Error in handleDuplicateFeature:", error);
     }
-  }
+  };
 
   const handleDeleteFeature = async () => {
     try {
-      // Delete the tasks
       const { error: tasksError } = await supabase
-        .from('tasks')
+        .from("tasks")
         .delete()
-        .eq('feature_id', feature.id)
+        .eq("feature_id", feature.id);
 
-      if (tasksError) {
-        console.error('Error deleting tasks:', tasksError)
-        throw new Error(`Failed to delete tasks: ${tasksError.message}`)
-      }
+      if (tasksError) throw tasksError;
 
-      // Delete the feature
       const { error: featureError } = await supabase
-        .from('features')
+        .from("features")
         .delete()
-        .eq('id', feature.id)
+        .eq("id", feature.id);
 
-      if (featureError) {
-        console.error('Error deleting feature:', featureError)
-        throw new Error(`Failed to delete feature: ${featureError.message}`)
-      }
+      if (featureError) throw featureError;
 
-      console.log('Feature and tasks deleted successfully')
-      onDelete(feature.id)
+      onDelete(feature.id);
     } catch (error) {
-      console.error('Error in handleDeleteFeature:', error)
+      console.error("Error in handleDeleteFeature:", error);
     }
-  }
+  };
 
-  const totalProgress = feature.tasks.reduce((sum: any, task: { progress: any }) => sum + task.progress, 0)
-  const totalTasks = feature.tasks.length
-  const completionPercentage = totalTasks > 0 ? totalProgress / totalTasks : 0
+  const totalProgress = feature.tasks.reduce(
+    (sum, task) => sum + task.progress,
+    0
+  );
+  const totalTasks = feature.tasks.length;
+  const completionPercentage =
+    totalTasks > 0 ? Math.round(totalProgress / totalTasks / 20) * 20 : 0;
 
   return (
-    <div className="mb-4 border rounded-lg p-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold flex-grow">{feature.name}</h3>
-        <Menu as="div" className="relative inline-block text-left">
-          <div>
-            <Menu.Button className="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-indigo-500">
-              Options
-            </Menu.Button>
+    <div className="min-w-[300px] flex flex-col justify-between w-[300px]  mx-4 my-4 bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="flex flex-col justify-start">
+        <div className="relative bg-blue-500 h-16 flex flex-row items-center justify-between px-4">
+          <div className="z-20 flex items-center space-x-2">
+            <div className="bg-white rounded-full px-3 py-1 text-blue-800 font-bold">
+              {completionPercentage}%
+            </div>
+            <h3 className="text-lg font-semibold text-white w-[160px] truncate">
+              {feature.name}
+            </h3>
           </div>
-          <Transition
-            as={Fragment}
-            enter="transition ease-out duration-100"
-            enterFrom="transform opacity-0 scale-95"
-            enterTo="transform opacity-100 scale-100"
-            leave="transition ease-in duration-75"
-            leaveFrom="transform opacity-100 scale-100"
-            leaveTo="transform opacity-0 scale-95"
-          >
-            <Menu.Items className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
-              <div className="py-1">
-                <Menu.Item>
-                  {({ active }) => (
-                    <button
-                      onClick={handleDuplicateFeature}
-                      className={`${
-                        active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
-                      } group flex items-center px-4 py-2 text-sm w-full`}
-                    >
-                      Duplicate
-                    </button>
-                  )}
-                </Menu.Item>
-                <Menu.Item>
-                  {({ active }) => (
-                    <button
-                      onClick={handleDeleteFeature}
-                      className={`${
-                        active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
-                      } group flex items-center px-4 py-2 text-sm w-full`}
-                    >
-                      Delete
-                    </button>
-                  )}
-                </Menu.Item>
-              </div>
-            </Menu.Items>
-          </Transition>
-        </Menu>
+          <Menu as="div" className="relative inline-block text-left">
+            <Menu.Button className="text-white hover:bg-blue-800 rounded-full p-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                />
+              </svg>
+            </Menu.Button>
+            <Transition
+              as={Fragment}
+              enter="transition ease-out duration-100"
+              enterFrom="transform opacity-0 scale-95"
+              enterTo="transform opacity-100 scale-100"
+              leave="transition ease-in duration-75"
+              leaveFrom="transform opacity-100 scale-100"
+              leaveTo="transform opacity-0 scale-95"
+            >
+              <Menu.Items className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
+                <div className="py-1">
+                  <Menu.Item>
+                    {({ active }) => (
+                      <button
+                        onClick={handleDuplicateFeature}
+                        className={`${
+                          active ? "bg-gray-100 text-gray-900" : "text-gray-700"
+                        } group flex items-center px-4 py-2 text-sm w-full`}
+                      >
+                        Duplicate
+                      </button>
+                    )}
+                  </Menu.Item>
+                  <Menu.Item>
+                    {({ active }) => (
+                      <button
+                        onClick={handleDeleteFeature}
+                        className={`${
+                          active ? "bg-gray-100 text-gray-900" : "text-gray-700"
+                        } group flex items-center px-4 py-2 text-sm w-full`}
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </Menu.Item>
+                </div>
+              </Menu.Items>
+            </Transition>
+          </Menu>
+          <div
+            className="absolute left-0 top-0 bg-blue-800 h-full z-10"
+            style={{ width: `${completionPercentage}%` }}
+          ></div>
+        </div>
+        <div className="p-4">
+        <TaskList
+  tasks={feature.tasks.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())}
+  featureId={feature.id}
+/>
+        </div>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
-        <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${completionPercentage}%` }}></div>
-      </div>
-      <TaskList tasks={feature.tasks.sort((a: { created_at: string | number | Date }, b: { created_at: string | number | Date }) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())} featureId={feature.id} />
-      {/* <AddTaskForm featureId={feature.id} /> */}
+      <AddTaskForm featureId={feature.id} />
     </div>
-  )
+  );
 }
 
-export default function FeatureList({ features, projectId }: { features: Feature[], projectId: string }) {
-  const [orderedFeatures, setOrderedFeatures] = useState<Feature[]>([])
+export default function FeatureList({
+  features,
+  projectId,
+}: {
+  features: Feature[];
+  projectId: string;
+}) {
+  const [orderedFeatures, setOrderedFeatures] = useState<Feature[]>([]);
 
   useEffect(() => {
-    const sortedFeatures = [...features].sort((a, b) => a.order - b.order)
-    setOrderedFeatures(sortedFeatures)
-  }, [features])
+    setOrderedFeatures(features.sort((a, b) => a.order - b.order));
+  }, [features]);
 
-  const handleDuplicate = (newFeature: Feature) => {
-    setOrderedFeatures(prevFeatures => [...prevFeatures, newFeature])
-  }
+  const handleDuplicateFeature = (newFeature: Feature) => {
+    setOrderedFeatures([...orderedFeatures, newFeature]);
+  };
 
-  const handleDelete = (featureId: string) => {
-    setOrderedFeatures(prevFeatures => prevFeatures.filter(feature => feature.id !== featureId))
-  }
+  const handleDeleteFeature = (featureId: string) => {
+    setOrderedFeatures(
+      orderedFeatures.filter((feature) => feature.id !== featureId)
+    );
+  };
 
   return (
-    <div className="mt-8">
+    <div className="flex flex-wrap justify-center m-auto">
       {orderedFeatures.map((feature) => (
         <FeatureItem
           key={feature.id}
           feature={feature}
-          onDuplicate={handleDuplicate}
-          onDelete={handleDelete}
+          onDuplicate={handleDuplicateFeature}
+          onDelete={handleDeleteFeature}
         />
       ))}
     </div>
-  )
+  );
 }

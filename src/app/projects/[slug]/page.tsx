@@ -35,7 +35,7 @@ export default async function ProjectDetailPage({ params }: { params: { slug: st
   console.log('Project found:', project) // Debug log
 
   return (
-    <div className="bg-black">
+    <div>
       <div className="flex w-full flex-col box-border ">
         <div className="projectheader w-full flex p-5 flex-row justify-between align-middle">
           <div>
@@ -52,7 +52,9 @@ export default async function ProjectDetailPage({ params }: { params: { slug: st
           />
         </div>
       </div>
-      <FeatureList features={project.features} projectId={project.id} />
+      <div className="flex flex-row w-full">
+        <FeatureList features={project.features} projectId={project.id} />
+      </div>
     </div>
   )
 }

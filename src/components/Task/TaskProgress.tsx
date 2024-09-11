@@ -9,8 +9,8 @@ const TaskProgress: React.FC<TaskProgressProps> = ({ progress, onProgressChange 
       {boxes.map((boxValue) => (
         <button
           key={boxValue}
-          className={`w-5 h-5 border ${
-            progress >= boxValue ? 'bg-blue-500' : 'bg-white'
+          className={`w-5 h-5 rounded hover:opacity-75 border ${
+            progress >= boxValue ? 'bg-black' : 'bg-gray-200'
           }`}
           onClick={() => onProgressChange(progress === boxValue ? 0 : boxValue)}
         />

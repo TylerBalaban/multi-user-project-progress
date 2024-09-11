@@ -13,6 +13,8 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, featureId }) => {
   const [editingTaskName, setEditingTaskName] = useState('');
   const supabase = createClientComponentClient();
   const router = useRouter();
+  const sortedTasks = tasks.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
 
   const handleEditTask = (task: Task) => {
     setEditingTaskId(task.id);
@@ -51,9 +53,9 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, featureId }) => {
   };
 
   return (
-    <ul className="space-y-2">
-      {tasks.map((task) => (
-        <li key={task.id} className="flex items-center space-x-4">
+    <ul className="space-y-4">
+      {sortedTasks.map((task) => (
+        <li key={task.id} className="flex items-center justify-between">
           {editingTaskId === task.id ? (
             <input
               type="text"
@@ -61,11 +63,11 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, featureId }) => {
               onChange={(e) => setEditingTaskName(e.target.value)}
               onBlur={() => handleSaveTask(task)}
               onKeyPress={(e) => e.key === 'Enter' && handleSaveTask(task)}
-              className="border rounded px-2 py-1"
+              className="border rounded px-2 py-1 flex-grow mr-2"
               autoFocus
             />
           ) : (
-            <span onClick={() => handleEditTask(task)} className="cursor-pointer">
+            <span onClick={() => handleEditTask(task)} className="cursor-pointer flex-grow">
               {task.name}
             </span>
           )}
