@@ -36,7 +36,7 @@ export interface Project {
     name: string;
     feature_id: string;
     progress: number;
-    created_at: string;
+    order: number;
   }
 
   export interface TaskListProps {
