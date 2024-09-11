@@ -18,14 +18,19 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ featureId }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!taskName.trim()) return;
-
+  
     try {
       const { error } = await supabase
         .from('tasks')
-        .insert({ name: taskName, feature_id: featureId, progress: 0 });
-
+        .insert({ 
+          name: taskName, 
+          feature_id: featureId, 
+          progress: 0, 
+          created_at: new Date().toISOString()
+        });
+  
       if (error) throw error;
-
+  
       setTaskName('');
       setIsInputVisible(false);
       router.refresh();

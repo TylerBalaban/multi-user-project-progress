@@ -12,15 +12,15 @@ export default function AddFeatureForm({ projectId }: { projectId: string }) {
   const supabase = createClientComponentClient()
 
   const handleAddFeature = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
+    e.preventDefault();
+    setError(null);
 
     if (!featureName.trim()) {
-      setError('Feature name cannot be blank.')
-      return
+      setError('Feature name cannot be blank.');
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
       // Get the current max order
@@ -29,46 +29,46 @@ export default function AddFeatureForm({ projectId }: { projectId: string }) {
         .select('order')
         .eq('project_id', projectId)
         .order('order', { ascending: false })
-        .limit(1)
+        .limit(1);
 
       if (maxOrderError) {
-        console.error('Error fetching max order:', maxOrderError)
-        throw new Error(`Failed to fetch max order: ${maxOrderError.message}`)
+        console.error('Error fetching max order:', maxOrderError);
+        throw new Error(`Failed to fetch max order: ${maxOrderError.message}`);
       }
 
-      const newOrder = maxOrderData && maxOrderData.length > 0 ? (maxOrderData[0].order || 0) + 1 : 1
+      const newOrder = maxOrderData && maxOrderData.length > 0 ? (maxOrderData[0].order || 0) + 1 : 1;
 
       // Add the feature
       const { data: feature, error: featureError } = await supabase
         .from('features')
         .insert({ name: featureName, project_id: projectId, order: newOrder })
         .select()
-        .single()
+        .single();
 
       if (featureError) {
-        console.error('Error inserting feature:', featureError)
-        throw new Error(`Failed to insert feature: ${featureError.message}`)
+        console.error('Error inserting feature:', featureError);
+        throw new Error(`Failed to insert feature: ${featureError.message}`);
       }
 
       if (!feature) {
-        throw new Error('Feature was not created')
+        throw new Error('Feature was not created');
       }
 
-      // Add default task
+      // Add default task with the lowest order
       const { error: taskError } = await supabase
         .from('tasks')
-        .insert({ name: 'default task', feature_id: feature.id, progress: 0, created_at: new Date().toISOString() })
+        .insert({ name: 'default task', feature_id: feature.id, progress: 0, order: 1, created_at: new Date().toISOString() });
 
       if (taskError) {
-        console.error('Error inserting default task:', taskError)
-        throw new Error(`Failed to insert default task: ${taskError.message}`)
+        console.error('Error inserting default task:', taskError);
+        throw new Error(`Failed to insert default task: ${taskError.message}`);
       }
 
-      console.log('Feature and default task added successfully:', feature)
+      console.log('Feature and default task added successfully:', feature);
 
-      setFeatureName('')
-      setShowInput(false)
-      router.refresh()
+      setFeatureName('');
+      setShowInput(false);
+      router.refresh();
     } catch (error) {
       console.error('Error in handleAddFeature:', error)
       setError(error instanceof Error ? error.message : 'An unknown error occurred')

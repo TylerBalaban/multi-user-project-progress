@@ -16,6 +16,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, featureId }) => {
   const sortedTasks = tasks.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
 
+
   const handleEditTask = (task: Task) => {
     setEditingTaskId(task.id);
     setEditingTaskName(task.name);
@@ -27,9 +28,9 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, featureId }) => {
         .from('tasks')
         .update({ name: editingTaskName })
         .eq('id', task.id);
-
+  
       if (error) throw error;
-
+  
       setEditingTaskId(null);
       router.refresh();
     } catch (error) {

@@ -27,6 +27,7 @@ function FeatureItem({
           name: `${feature.name} (Copy)`,
           project_id: feature.project_id,
           order: feature.order,
+          created_at: feature.created_at,
         })
         .select()
         .single();
@@ -38,7 +39,7 @@ function FeatureItem({
         name: task.name,
         feature_id: newFeature.id,
         progress: task.progress,
-        created_at: new Date().toISOString(),
+        created_at: feature.created_at, 
       }));
 
       const { error: tasksError } = await supabase.from("tasks").insert(tasks);
@@ -165,7 +166,7 @@ function FeatureItem({
         </div>
         <div className="p-4">
         <TaskList
-  tasks={feature.tasks.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())}
+  tasks={feature.tasks.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())} // Sort in descending order
   featureId={feature.id}
 />
         </div>
