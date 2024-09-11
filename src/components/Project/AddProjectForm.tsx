@@ -59,6 +59,7 @@ export default function AddProjectForm({ userId, teamId, onProjectAdded }: AddPr
           name: 'Default Task',
           feature_id: feature.id,
           progress: 0,
+          order: 0,
         })
 
       if (taskError) throw taskError

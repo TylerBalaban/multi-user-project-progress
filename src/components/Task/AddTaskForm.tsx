@@ -1,6 +1,4 @@
-'use client'
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 import { CirclePlus } from 'lucide-react';
@@ -15,24 +13,51 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ featureId }) => {
   const supabase = createClientComponentClient();
   const router = useRouter();
 
+  useEffect(() => {
+    const fetchTaskOrder = async () => {
+      try {
+        const { data: tasks, error: tasksError } = await supabase
+          .from('tasks')
+          .select('order')
+          .eq('feature_id', featureId)
+          .order('order', { ascending: true });
+
+        if (tasksError) {
+          console.error('Error fetching tasks:', tasksError);
+          return;
+        }
+
+        const newOrder = tasks.length > 0 ? Math.max(...tasks.map(t => t.order)) + 1 : 1;
+        setTaskOrder(newOrder);
+      } catch (error) {
+        console.error('Error fetching task order:', error);
+      }
+    };
+
+    fetchTaskOrder();
+  }, [featureId, supabase]);
+
+  const [taskOrder, setTaskOrder] = useState(1);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!taskName.trim()) return;
-  
+
     try {
       const { error } = await supabase
         .from('tasks')
-        .insert({ 
-          name: taskName, 
-          feature_id: featureId, 
-          progress: 0, 
-          created_at: new Date().toISOString()
+        .insert({
+          name: taskName,
+          feature_id: featureId,
+          progress: 0,
+          order: taskOrder,
         });
-  
+
       if (error) throw error;
-  
+
       setTaskName('');
       setIsInputVisible(false);
+      setTaskOrder(taskOrder + 1);
       router.refresh();
     } catch (error) {
       console.error('Error adding task:', error);
