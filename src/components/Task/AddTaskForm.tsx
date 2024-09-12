@@ -73,7 +73,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ featureId }) => {
           onChange={(e) => setTaskName(e.target.value)}
           onBlur={() => setIsInputVisible(false)}
           placeholder="New task name"
-          className="p-2 w-full"
+          className="p-2 w-full focus:outline-none focus:ring-1 focus:ring-blue-500  bg-blue-100 placeholder-blue-600 text-sm"
           autoFocus
         />
       ) : (
