@@ -57,7 +57,7 @@ export default function AddFeatureForm({ projectId }: { projectId: string }) {
       // Add default task with the lowest order
       const { error: taskError } = await supabase
         .from('tasks')
-        .insert({ name: 'default task', feature_id: feature.id, progress: 0, order: 1, created_at: new Date().toISOString() });
+        .insert({ name: 'default task', feature_id: feature.id, progress: 0, order: 1 });
 
       if (taskError) {
         console.error('Error inserting default task:', taskError);
