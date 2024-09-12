@@ -66,11 +66,11 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, featureId }) => {
   };
 
   return (
-    <ul className="space-y-4">
+    <ul className="">
       {sortedTasks.map((task) => (
         <li
           key={task.id}
-          className="flex group items-center justify-between relative hover:bg-slate-100 rounded-lg px-2 py-1"
+          className="flex group items-center justify-between relative  px-2 py-1"
         >
           {editingTaskId === task.id ? (
             <input
@@ -79,13 +79,13 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, featureId }) => {
               onChange={(e) => setEditingTaskName(e.target.value)}
               onBlur={() => handleSaveTask(task)}
               onKeyPress={(e) => e.key === 'Enter' && handleSaveTask(task)}
-              className="focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg bg-blue-50 px-2 flex-grow max-w-[140px]"
+              className="focus:outline-none focus:ring-2  rounded-lg bg-blue-100 flex-grow mr-2 max-w-[160px]"
               autoFocus
             />
           ) : (
             <span
               onClick={() => handleEditTask(task)}
-              className="cursor-pointer max-w-[140px] flex-grow"
+              className="cursor-pointer  hover:bg-slate-100  px-2  mr-2 rounded-lg flex-grow"
             >
               {task.name}
             </span>
@@ -95,10 +95,10 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, featureId }) => {
             onProgressChange={(newProgress) => handleProgressChange(task, newProgress)}
           />
           <button
-            className="hidden group-hover:block ml-2"
+            className="opacity-0 group-hover:opacity-100 ml-2"
             onClick={() => handleDeleteTask(task.id)}
           >
-            <TrashIcon size={16} className="text-red-500" />
+            <TrashIcon size={16} className="text-red-500 " />
           </button>
         </li>
       ))}

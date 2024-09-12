@@ -99,7 +99,7 @@ function FeatureItem({
   const progressPercentage = totalTasks > 0 ? Math.round((totalProgress / totalPossibleProgress) * 100) : 0;
 
   return (
-    <div className="min-w-[300px] flex flex-col justify-between w-[300px]  mx-4 my-4 bg-white rounded-lg shadow-md overflow-hidden">
+    <div className="min-w-[300px] flex flex-col justify-between w-[350px]  mx-4 my-4 bg-white rounded-lg shadow-md overflow-hidden">
       <div className="flex flex-col justify-start">
         <div className="relative bg-blue-500 h-16 flex flex-row items-center justify-between px-4">
           <div className="z-20 flex items-center space-x-2">
@@ -138,7 +138,7 @@ function FeatureItem({
               leaveFrom="transform opacity-100 scale-100"
               leaveTo="transform opacity-0 scale-95"
             >
-              <Menu.Items className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
+              <Menu.Items className="absolute right-0 mt-2 w-56  z-50 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
                 <div className="py-1">
                   <Menu.Item>
                     {({ active }) => (
@@ -169,13 +169,13 @@ function FeatureItem({
             </Transition>
           </Menu>
           <div
-            className="absolute left-0 top-0 bg-blue-800 h-full z-10"
+            className="absolute left-0 top-0 bg-blue-800 h-full z-10 transition-all duration-500"
             style={{ width: `${progressPercentage}%` }}
           ></div>
         </div>
-        <div className="p-4">
+        <div className="pl-4 py-4 pr-2">
         <TaskList
-  tasks={feature.tasks.sort((a, b) => b.order - a.order)} // Sort in descending order by order
+  tasks={feature.tasks.sort((a, b) => b.order - a.order)} 
   featureId={feature.id}
 />
         </div>
@@ -216,7 +216,7 @@ export default function FeatureList({
           feature={feature}
           onDuplicate={handleDuplicateFeature}
           onDelete={handleDeleteFeature}
-          onNameChange={() => {}} // Placeholder function added to satisfy type requirements
+          onNameChange={() => {}} 
         />
       ))}
     </div>
