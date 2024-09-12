@@ -6,6 +6,9 @@ import { Menu, Transition } from "@headlessui/react";
 import { Feature, Task } from "@/types";
 import TaskList from "@/components/Task/TaskList";
 import AddTaskForm from "@/components/Task/AddTaskForm";
+import { useRouter } from 'next/navigation';
+
+
 
 function FeatureItem({
   feature,
@@ -17,6 +20,7 @@ function FeatureItem({
   onDelete: (featureId: string) => void;
 }) {
   const supabase = createClientComponentClient();
+  const router = useRouter();
   
 
   const handleDuplicateFeature = async () => {
@@ -57,6 +61,7 @@ function FeatureItem({
       if (fetchError) throw fetchError;
 
       onDuplicate(fetchedFeature);
+      router.refresh();
     } catch (error) {
       console.error("Error in handleDuplicateFeature:", error);
     }
@@ -79,6 +84,7 @@ function FeatureItem({
       if (featureError) throw featureError;
 
       onDelete(feature.id);
+      router.refresh();
     } catch (error) {
       console.error("Error in handleDeleteFeature:", error);
     }
