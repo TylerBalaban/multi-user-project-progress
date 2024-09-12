@@ -64,7 +64,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, featureId }) => {
               onChange={(e) => setEditingTaskName(e.target.value)}
               onBlur={() => handleSaveTask(task)}
               onKeyPress={(e) => e.key === 'Enter' && handleSaveTask(task)}
-              className="border rounded px-2 py-1 flex-grow mr-2"
+              className="focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg bg-blue-50 px-2 flex-grow max-w-[140px]"
               autoFocus
             />
           ) : (
