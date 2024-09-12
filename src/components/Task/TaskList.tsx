@@ -13,7 +13,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, featureId }) => {
   const [editingTaskName, setEditingTaskName] = useState('');
   const supabase = createClientComponentClient();
   const router = useRouter();
-  const sortedTasks = tasks.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  const sortedTasks = tasks.sort((a, b) => a.order - b.order);
 
 
 

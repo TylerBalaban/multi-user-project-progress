@@ -17,6 +17,7 @@ function FeatureItem({
   onDelete: (featureId: string) => void;
 }) {
   const supabase = createClientComponentClient();
+  
 
   const handleDuplicateFeature = async () => {
     try {
@@ -83,13 +84,11 @@ function FeatureItem({
     }
   };
 
-  const totalProgress = feature.tasks.reduce(
-    (sum, task) => sum + task.progress,
-    0
-  );
+  const totalProgress = feature.tasks.reduce((sum, task) => sum + task.progress, 0);
   const totalTasks = feature.tasks.length;
+  const totalPossibleProgress = totalTasks * 100;
   const completionPercentage =
-    totalTasks > 0 ? Math.round(totalProgress / totalTasks / 20) * 20 : 0;
+    totalTasks > 0 ? Math.round((totalProgress / totalPossibleProgress) * 100) : 0;
 
   return (
     <div className="min-w-[300px] flex flex-col justify-between w-[300px]  mx-4 my-4 bg-white rounded-lg shadow-md overflow-hidden">
