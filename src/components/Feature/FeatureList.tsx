@@ -87,8 +87,7 @@ function FeatureItem({
   const totalProgress = feature.tasks.reduce((sum, task) => sum + task.progress, 0);
   const totalTasks = feature.tasks.length;
   const totalPossibleProgress = totalTasks * 100;
-  const completionPercentage =
-    totalTasks > 0 ? Math.round((totalProgress / totalPossibleProgress) * 100) : 0;
+  const progressPercentage = totalTasks > 0 ? Math.round((totalProgress / totalPossibleProgress) * 100) : 0;
 
   return (
     <div className="min-w-[300px] flex flex-col justify-between w-[300px]  mx-4 my-4 bg-white rounded-lg shadow-md overflow-hidden">
@@ -96,7 +95,7 @@ function FeatureItem({
         <div className="relative bg-blue-500 h-16 flex flex-row items-center justify-between px-4">
           <div className="z-20 flex items-center space-x-2">
             <div className="bg-white rounded-full px-3 py-1 text-blue-800 font-bold">
-              {completionPercentage}%
+            {progressPercentage}%
             </div>
             <h3 className="text-lg font-semibold text-white w-[160px] truncate">
               {feature.name}
@@ -160,7 +159,7 @@ function FeatureItem({
           </Menu>
           <div
             className="absolute left-0 top-0 bg-blue-800 h-full z-10"
-            style={{ width: `${completionPercentage}%` }}
+            style={{ width: `${progressPercentage}%` }}
           ></div>
         </div>
         <div className="p-4">
