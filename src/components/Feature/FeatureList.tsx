@@ -7,6 +7,7 @@ import { Feature, Task } from "@/types";
 import TaskList from "@/components/Task/TaskList";
 import AddTaskForm from "@/components/Task/AddTaskForm";
 import { useRouter } from 'next/navigation';
+import FeatureNameInput from "@/components/Feature/FeatureNameInput";
 
 
 
@@ -14,10 +15,12 @@ function FeatureItem({
   feature,
   onDuplicate,
   onDelete,
+  onNameChange, // Add this prop
 }: {
   feature: Feature;
   onDuplicate: (newFeature: Feature) => void;
   onDelete: (featureId: string) => void;
+  onNameChange: (featureId: string, newName: string) => void; // Add this type
 }) {
   const supabase = createClientComponentClient();
   const router = useRouter();
@@ -103,9 +106,11 @@ function FeatureItem({
             <div className="bg-white rounded-full px-3 py-1 text-blue-800 font-bold">
             {progressPercentage}%
             </div>
-            <h3 className="text-lg font-semibold text-white w-[160px] truncate">
-              {feature.name}
-            </h3>
+            <FeatureNameInput
+              initialName={feature.name}
+              featureId={feature.id}
+              onNameChange={(newName) => onNameChange(feature.id, newName)}
+            />
           </div>
           <Menu as="div" className="relative inline-block text-left">
             <Menu.Button className="text-white hover:bg-blue-800 rounded-full p-2">
@@ -211,6 +216,7 @@ export default function FeatureList({
           feature={feature}
           onDuplicate={handleDuplicateFeature}
           onDelete={handleDeleteFeature}
+          onNameChange={() => {}} // Placeholder function added to satisfy type requirements
         />
       ))}
     </div>

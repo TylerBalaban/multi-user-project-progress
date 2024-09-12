@@ -68,7 +68,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, featureId }) => {
               autoFocus
             />
           ) : (
-            <span onClick={() => handleEditTask(task)} className="cursor-pointer flex-grow">
+            <span onClick={() => handleEditTask(task)} className="cursor-pointer px-2 hover:bg-slate-100 rounded-lg  max-w-[140px] flex-grow">
               {task.name}
             </span>
           )}
